@@ -1083,7 +1083,7 @@ order by dt asc
     
     results10 = compute(sql10)
     df10 = pd.DataFrame(results10.records)
-
+    df10 = df10.sort_values(by ='dt', ascending = True)
     st.write('Using the query above, one can plot the charts below:')
     
     fig1 = px.area(df10, x="dt", y="deposit_tvl", color_discrete_sequence=px.colors.qualitative.Pastel2)
