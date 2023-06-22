@@ -155,11 +155,7 @@ with tab1:
     st.write('')
     st.write('This tool is created so that users who want to learn the first basics don`t have to go through the process of creating an user on flipside, which will be better for them once they want to explore everything with more detail. Using tools like the one below, I expect this to be more friendly to a user who has never or barely ever touched SQL, and has no clue about what flipside is and how it works.')
     
-    ace_query = st_ace(
-        language="sql",
-        placeholder="select * from osmosis.core.fact_transfers limit 10",
-        theme="twilight",
-    )  
+    
     
 
 with tab2:
@@ -597,12 +593,7 @@ limit 20
     st.code(code9, language="sql", line_numbers=False)       
     
     st.write('So yeah that is a large query. It takes the last available date, delegations, undelegations, redelegations from and redelegations to other validators, and finally calculates the percentage each user has over the total amount staked, and assigns a rank based on that order. I have set a limit to only show the first 20 rows, but feel free to erase that in order to have a full list. Even more, if you select a specific date in the first CTE, it will show the amount staked by each user on that specific date.')
-    
-    ace_query = st_ace(
-        language="sql",
-        placeholder="select * from osmosis.core.fact_transfers limit 10",
-        theme="twilight",
-    )  
+  
     
         
 
