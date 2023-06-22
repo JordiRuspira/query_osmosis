@@ -10,7 +10,8 @@ import json
 import math
 
 # Configure Streamlit Page
-page_icon = "assets/img/eth.jpg"
+#page_icon = "assets/img/eth.jpg"
+page_icon = "assets/img/osmosis-55faa201.png"
 st.set_page_config(page_title="Query ETH", page_icon=page_icon, layout="wide")
 st.header("Query Ethereum")
 st.warning(
@@ -63,7 +64,7 @@ def run_query(q, provider):
 schema_df = pd.read_csv("assets/provider_schema_data.csv")
 
 # Sidebar
-st.sidebar.image("assets/img/ethereum.jpg", width=300)
+st.sidebar.image("assets/img/osmosis-55faa201.png", width=300)
 provider = st.sidebar.selectbox("Providers", ["Flipside"])
 st.sidebar.write("Tables")
 
