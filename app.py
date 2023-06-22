@@ -336,19 +336,7 @@ with tab4:
     ''' 
 
     st.code(code8, language="sql", line_numbers=False)            
-    
-    ace_query = st_ace(
-        language="sql",
-        placeholder="select * from osmosis.core.fact_transfers limit 10",
-        theme="twilight",
-    )  
-    
-    try:
-        if ace_query:
-            results_df = run_query(ace_query, provider)
-            st.write(results_df)
-    except:
-        st.write("Write a new query.")
+
         
     st.write('If you copy and execute the code, this shows two useful things:')
     st.write('- We have introduced the concept of dual. The dual table allows you to create a completely invented table and use it later on.')
@@ -521,15 +509,15 @@ limit 20
     
     st.write('So yeah that is a large query. It takes the last available date, delegations, undelegations, redelegations from and redelegations to other validators, and finally calculates the percentage each user has over the total amount staked, and assigns a rank based on that order. I have set a limit to only show the first 20 rows, but feel free to erase that in order to have a full list. Even more, if you select a specific date in the first CTE, it will show the amount staked by each user on that specific date.')
     
-    ace_query2 = st_ace(
+    ace_query = st_ace(
         language="sql",
         placeholder="select * from osmosis.core.fact_transfers limit 10",
         theme="twilight",
     )  
     
     try:
-        if ace_query2:
-            results_df2 = run_query(ace_query2, provider)
-            st.write(results_df2)
+        if ace_query:
+            results_df = run_query(ace_query, provider)
+            st.write(results_df)
     except:
         st.write("Write a new query.")
