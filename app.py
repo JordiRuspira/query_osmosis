@@ -64,7 +64,20 @@ def run_query(q, provider):
     df = provider_query[provider](q)
     return df
     
+ace_query = st_ace(
+    language="sql",
+    placeholder="elect * from osmosis.core.fact_transfers limit 10",
+    theme="twilight",
+)
 
+provider_0 = 'Flipside'
+try:
+    if ace_query:
+        results_df = run_query(ace_query, provider_0)
+        st.write(results_df)
+except:
+    st.write("Write a new query.")
+    
 
 # Read Custom CSS
 with open("assets/css/style.css", "r") as f:
