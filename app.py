@@ -517,18 +517,19 @@ with tab4:
 select * from total_staked_user_1
 limit 20
     ''' 
+    st.code(code9, language="sql", line_numbers=False)       
     
     st.write('So yeah that is a large query. It takes the last available date, delegations, undelegations, redelegations from and redelegations to other validators, and finally calculates the percentage each user has over the total amount staked, and assigns a rank based on that order. I have set a limit to only show the first 20 rows, but feel free to erase that in order to have a full list. Even more, if you select a specific date in the first CTE, it will show the amount staked by each user on that specific date.')
     
-    ace_query = st_ace(
+    ace_query2 = st_ace(
         language="sql",
         placeholder="select * from osmosis.core.fact_transfers limit 10",
         theme="twilight",
     )  
     
     try:
-        if ace_query:
-            results_df = run_query(ace_query, provider)
-            st.write(results_df)
+        if ace_query2:
+            results_df2 = run_query(ace_query2, provider)
+            st.write(results_df2)
     except:
         st.write("Write a new query.")
