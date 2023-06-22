@@ -8,6 +8,12 @@ from transpose import Transpose
 import requests
 import json
 import math
+import seaborn as sns
+import matplotlib.pyplot as plt
+import matplotlib.dates as md
+import matplotlib.ticker as ticker
+import numpy as np
+import plotly.express as px
 
 # Configure Streamlit Page
 #page_icon = "assets/img/eth.jpg"
@@ -26,6 +32,7 @@ st.markdown(custom_css, unsafe_allow_html=True)
 
 # Get API Keys
 flipside_key = st.secrets["API_KEY"]
+sdk = ShroomDK(flipside_key)
 
 # Query Flipside using their Python SDK
 def query_flipside(q):
@@ -101,7 +108,7 @@ with tab1:
     st.write('')
     st.write('This tool pretends to be an introduction and a go-to place for users who have never queried Osmosis data, and want to start without complex stuff or registering anywhere.')
     st.write('')
-    st.write('On the left hand side, you`ll always have available the different tables regarding Osmosis and Mars outpost on Osmosis, their columns and description. This way, you can always refer to them throughout the tool. Additionally, I`ve structured this site in different tabs so you can always be playing around it. These tabs include: ')
+    st.write('On the left hand side, you will always have available the different tables regarding Osmosis and Mars outpost on Osmosis, their columns and description. This way, you can always refer to them throughout the tool. Additionally, I have structured this site in different tabs so you can always be playing around it. These tabs include: ')
     st.write('- SQL basic information. You can always look for more advanced stuff online.')
     st.write('- Osmosis basics. Having a small knowledge on SQL, we`ll look at some Osmosis specific information and how to query it.')
     st.write('- We`ll create some specific tables using the already existing ones, making use of more advanced knowledge.')
@@ -177,13 +184,37 @@ with tab2:
 
 with tab3:    
     
+    
     st.subheader("Osmosis basics")
+    
+    st.write('')
+    st.write('Since the purpose of this tool is not an introduction on Osmosis, I will not spend much time explaining it, but it is usefull to remember which actions users can perform on Osmosis:')
+    st.write('- Transfer tokens (both between Osmosis accounts and to other IBC connected chains)')
+    st.write('- Stake, unstake, restake OSMO tokens to validators')
+    st.write('- Vote, create proposals')
+    st.write('- Perform swap operations')
+    st.write('- Provide liquidity to a pool')
+    st.write('- Claim rewards from staking')
+    st.write('- As new tools appear, the complexity increases, but it is somewhat still a combination of all prior operations')
+    
+    st.write('With this being said, lets get hands-on, shall we?')
+    
+    st.subheader("Daily Transfers")
+    st.write('')
+    st.write('Now that we have all the tools needed, we can start querying. We will look at a couple of examples, starting with transfers, both IBC transfers and non-IBC transfers')
+    
+    code5 = '''select distinct transfer_type from osmosis.core.fact_transfers
+    ''' 
+
+    st.code(code5, language="sql", line_numbers=False)            
+    
+    st.write('The code above shows the different types of transfers. We can execute it below, and see what it returns.')
     # Query Editor
     ace_query = st_ace(
         language="sql",
-        placeholder="SELECT * FROM osmosis.blocks limit 10",
+        placeholder="select distinct transfer_type from osmosis.core.fact_transfers",
         theme="twilight",
-    )
+    )  
     
     try:
         if ace_query:
@@ -191,3 +222,46 @@ with tab3:
             st.write(results_df)
     except:
         st.write("Write a new query.")
+        
+    st.write('So it returns three values: IBC_TRANSFER_OUT, IBC_TRANSFER_IN and OSMOSIS. Therefore, the two first values correspond to tokens being sent out and received to and from other IBC-enabled blockchains. Consider the following code:')
+
+
+    code6 = '''select date_trunc('day', block_timestamp) as date,
+    transfer_type,
+    count(distinct tx_id) as num_tx from osmosis.core.fact_transfers a 
+    where tx_succeeded = 'TRUE'
+    and  date_trunc('day', block_timestamp) >= current_date - 30
+    and transfer_type in ('IBC_TRANSFER_IN','IBC_TRANSFER_OUT')
+    group by date, transfer_type
+    ''' 
+
+    st.code(code6, language="sql", line_numbers=False)            
+    
+    st.write('If we execute and plot the results of the previous statement, we can plot the daily number of IBC transactions in and out of Osmosis from the past 30 days.')
+   
+    
+    sql0 = """
+    select address, account_address, label, rank from  osmosis.core.fact_validators
+    where rank <= 150
+    
+    """
+    
+    st.experimental_memo(ttl=1000000)
+    @st.experimental_memo
+    def compute(a):
+        results=sdk.query(a)
+        return results
+    
+    results0 = compute(sql0)
+    df0 = pd.DataFrame(results0.records)
+    
+    fig1 = px.bar(df0, x="date", y="num_tx", color="transfer_type", color_discrete_sequence=px.colors.qualitative.Pastel2)
+    fig1.update_layout(
+    title='Daily number of IBC transactions - last 30 days',
+    xaxis_tickfont_size=14,
+    yaxis_tickfont_size=14,
+    bargap=0.15, # gap between bars of adjacent location coordinates.
+    bargroupgap=0.1 # gap between bars of the same location coordinate.
+    )
+    st.plotly_chart(fig1, theme="streamlit", use_container_width=True)
+ 
