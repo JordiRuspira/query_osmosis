@@ -608,7 +608,7 @@ limit 20
     st.write('So yeah that is a large query. It takes the last available date, delegations, undelegations, redelegations from and redelegations to other validators, and finally calculates the percentage each user has over the total amount staked, and assigns a rank based on that order. I have set a limit to only show the first 20 rows, but feel free to erase that in order to have a full list. Even more, if you select a specific date in the first CTE, it will show the amount staked by each user on that specific date.')
 
     st.write('')
-    st.write('Another nice and interesting query is the one below, using [Effort Capital dashboard](https://flipsidecrypto.xyz/effortcapital1/mars-osmosis-outpost-naeBDD) on Mars Outpost on Osmosis':)
+    st.write('Another nice and interesting query is the one below, using [Effort Capital dashboard](https://flipsidecrypto.xyz/effortcapital1/mars-osmosis-outpost-naeBDD) on Mars Outpost on Osmosis:')
     
         
     code13 = '''with txs as (
@@ -1083,6 +1083,8 @@ order by dt asc
     
     results10 = compute(sql10)
     df10 = pd.DataFrame(results10.records)
+
+    st.write('Using the query above, one can plot the charts below:')
     
     fig1 = px.area(df10, x="DT", y="DEPOSIT_TVL", color_discrete_sequence=px.colors.qualitative.Pastel2)
     fig1.update_layout(
