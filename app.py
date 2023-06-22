@@ -1086,7 +1086,7 @@ order by dt asc
 
     st.write('Using the query above, one can plot the charts below:')
     
-    fig1 = px.area(df10, x="dt", y="Deposit_TVL", color_discrete_sequence=px.colors.qualitative.Pastel2)
+    fig1 = px.area(df10, x="dt", y="deposit_tvl", color_discrete_sequence=px.colors.qualitative.Pastel2)
     fig1.update_layout(
     title='Daily Mars deposit TVL (USD)',
     xaxis_tickfont_size=14,
@@ -1096,7 +1096,7 @@ order by dt asc
     )
     st.plotly_chart(fig1, theme="streamlit", use_container_width=True)
 
-    fig1 = px.area(df10, x="dt", y="Borrow_TVL", color_discrete_sequence=px.colors.qualitative.Pastel2)
+    fig1 = px.area(df10, x="dt", y="borrow_tvl", color_discrete_sequence=px.colors.qualitative.Pastel2)
     fig1.update_layout(
     title='Daily Mars borrow TVL (USD)',
     xaxis_tickfont_size=14,
