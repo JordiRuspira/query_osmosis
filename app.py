@@ -72,11 +72,38 @@ schema_df = pd.read_csv("assets/provider_schema_data.csv")
 
 # Sidebar
 st.sidebar.image("assets/img/osmosis-55faa201.png", width=300)
-provider = st.sidebar.selectbox("Providers", ["Flipside"])
+provider = st.sidebar.selectbox("Providers", ["Osmosis"])
 st.sidebar.write("Tables")
 
 # Render the Query Editor
-provider_schema_df = schema_df[schema_df["datawarehouse"] == provider]
+provider_schema_df = schema_df[schema_df["table_schema"] == 'core']
+provider_tables_df = (
+    provider_schema_df.drop(columns=["column_name"])
+    .drop_duplicates()
+    .sort_values(by=["table_name"])
+)
+
+for index, row in provider_tables_df.iterrows():
+    table_name = row["table_name"]
+    table_schema = row["table_schema"]
+    table_catalog = row["table_catalog"]
+    if str(table_catalog) != "nan":
+        table_catalog = f"{table_catalog}."
+    else:
+        table_catalog = ""
+
+    with st.sidebar.expander(table_name):
+        st.code(f"{table_catalog}{table_schema}.{table_name}", language="sql")
+        columns_df = provider_schema_df[provider_schema_df["table_name"] == table_name][
+            ["column_name"]
+        ]
+        st.table(columns_df)
+
+provider = st.sidebar.selectbox("Providers", ["Mars"])
+st.sidebar.write("Tables")
+
+# Render the Query Editor
+provider_schema_df = schema_df[schema_df["table_schema"] == 'mars']
 provider_tables_df = (
     provider_schema_df.drop(columns=["column_name"])
     .drop_duplicates()
