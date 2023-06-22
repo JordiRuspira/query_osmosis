@@ -606,8 +606,499 @@ limit 20
     st.code(code9, language="sql", line_numbers=False)       
     
     st.write('So yeah that is a large query. It takes the last available date, delegations, undelegations, redelegations from and redelegations to other validators, and finally calculates the percentage each user has over the total amount staked, and assigns a rank based on that order. I have set a limit to only show the first 20 rows, but feel free to erase that in order to have a full list. Even more, if you select a specific date in the first CTE, it will show the amount staked by each user on that specific date.')
-  
+
+    st.write('')
+    st.write('Another nice and interesting query is the one below, using [Effort Capital dashboard](https://flipsidecrypto.xyz/effortcapital1/mars-osmosis-outpost-naeBDD) on Mars Outpost on Osmosis':)
     
         
+    code13 = '''with txs as (
+select
+distinct a.tx_id,
+a.msg_group,
+action
+from (
+select
+tx_id,
+msg_group,
+attribute_value as action
+from osmosis.core.fact_msg_attributes
+where attribute_key = 'action' and 
+(attribute_value = 'borrow' or attribute_value = 'deposit' or attribute_value = 'withdraw' or attribute_value = 'repay'
+)) a
+left join osmosis.core.fact_msg_attributes b
+on a.tx_id = b.tx_id
+where b.attribute_key = '_contract_address' and b.attribute_value = 'osmo1c3ljch9dfw5kf52nfwpxd2zmj2ese7agnx0p9tenkrryasrle5sqf3ftpg'
+),
 
-  
+asset_flows as (
+
+select distinct *
+
+from (
+
+select
+date_trunc('hour',a.block_timestamp) as dt,
+a.tx_id,
+b.action,
+d.token as asset,
+a.amount/pow(10,d.decimal)/pow(10,6)/f.liquidity_index as amount,
+a.amount*e.price/pow(10,d.decimal)/pow(10,6)/f.liquidity_index as amount_usd
+from (
+select
+block_timestamp,
+tx_id,
+msg_group,
+attribute_value as amount
+from osmosis.core.fact_msg_attributes
+where msg_type = 'wasm' and attribute_key = 'amount_scaled'
+) a
+join txs b
+on a.tx_id = b.tx_id  -- and a.msg_group = b.msg_group
+join (
+select
+tx_id,
+msg_group,
+attribute_value as denom
+from osmosis.core.fact_msg_attributes
+where msg_type = 'wasm-interests_updated' and attribute_key = 'denom'
+) c
+on a.tx_id = c.tx_id -- and a.msg_group = c.msg_group
+join (
+select
+address,
+upper(project_name) as token,
+decimal
+from osmosis.core.dim_tokens
+) d 
+on c.denom = d.address
+join (
+select 
+recorded_hour,
+symbol,
+price
+from osmosis.core.ez_prices
+) e 
+on d.token = e.symbol and date_trunc('hour',a.block_timestamp) = e.recorded_hour
+join (
+select
+tx_id,
+msg_group,
+attribute_value as liquidity_index
+from osmosis.core.fact_msg_attributes
+where msg_type = 'wasm-interests_updated' and attribute_key = 'liquidity_index'
+) f
+on a.tx_id = f.tx_id  --and a.msg_group = f.msg_group
+where e.recorded_hour is not null
+)
+),
+
+summarized_flows as (
+
+select 
+  dt,
+  sum(coalesce(case when action = 'deposit' and asset = 'OSMO' then amount end,0)) as Deposited_OSMO,
+  sum(coalesce(case when action = 'deposit' and asset = 'ATOM' then amount end,0)) as Deposited_ATOM,
+  sum(coalesce(case when action = 'deposit' and asset = 'USDC' then amount end,0)) as Deposited_USDC,
+  sum(coalesce(case when action = 'deposit' and asset = 'STATOM' then amount end,0)) as Deposited_stATOM,
+  sum(coalesce(case when action = 'deposit' and asset = 'ETH' then amount end,0)) as Deposited_WETH,
+  sum(coalesce(case when action = 'deposit' and asset = 'WBTC' then amount end,0)) as Deposited_WBTC,
+  sum(coalesce(case when action = 'borrow' and asset = 'OSMO' then amount end,0)) as Borrowed_OSMO,
+  sum(coalesce(case when action = 'borrow' and asset = 'ATOM' then amount end,0)) as Borrowed_ATOM,
+  sum(coalesce(case when action = 'borrow' and asset = 'USDC' then amount end,0)) as Borrowed_USDC,
+  sum(coalesce(case when action = 'borrow' and asset = 'ETH' then amount end,0)) as Borrowed_WETH,
+  sum(coalesce(case when action = 'borrow' and asset = 'WBTC' then amount end,0)) as Borrowed_WBTC,
+  sum(coalesce(case when action = 'borrow' and asset = 'STATOM' then amount end,0)) as Borrowed_stATOM,
+  sum(coalesce(case when action = 'withdraw' and asset = 'OSMO' then amount end,0)) as Withdrawn_OSMO,
+  sum(coalesce(case when action = 'withdraw' and asset = 'ATOM' then amount end,0)) as Withdrawn_ATOM,
+  sum(coalesce(case when action = 'withdraw' and asset = 'STATOM' then amount end,0)) as Withdrawn_stATOM,
+  sum(coalesce(case when action = 'withdraw' and asset = 'USDC' then amount end,0)) as Withdrawn_USDC,
+  sum(coalesce(case when action = 'withdraw' and asset = 'ETH' then amount end,0)) as Withdrawn_WETH,
+  sum(coalesce(case when action = 'withdraw' and asset = 'WBTC' then amount end,0)) as Withdrawn_WBTC,
+  sum(coalesce(case when action = 'repay' and asset = 'OSMO' then amount end,0)) as Repaid_OSMO,
+  sum(coalesce(case when action = 'repay' and asset = 'ATOM' then amount end,0)) as Repaid_ATOM,
+  sum(coalesce(case when action = 'repay' and asset = 'USDC' then amount end,0)) as Repaid_USDC,
+  sum(coalesce(case when action = 'repay' and asset = 'STATOM' then amount end,0)) as Repaid_stATOM,
+  sum(coalesce(case when action = 'repay' and asset = 'ETH' then amount end,0)) as Repaid_WETH,
+  sum(coalesce(case when action = 'repay' and asset = 'WBTC' then amount end,0)) as Repaid_WBTC,
+  SUM(Deposited_OSMO) over (order by dt asc) as Cum_Deposit_OSMO,
+  SUM(Borrowed_OSMO) over (order by dt asc) as Cum_Borrowed_OSMO,
+  SUM(Repaid_OSMO) over (order by dt asc) as Cum_Repaid_OSMO,
+  SUM(Withdrawn_OSMO) over (order by dt asc) as Cum_Withdrawn_OSMO,
+
+  SUM(Deposited_WETH) over (order by dt asc) as Cum_Deposit_WETH,
+  SUM(Borrowed_WETH) over (order by dt asc) as Cum_Borrowed_WETH,
+  SUM(Withdrawn_WETH) over (order by dt asc) as Cum_Withdrawn_WETH,
+  SUM(Repaid_WETH) over (order by dt asc) as Cum_Repaid_WETH,
+
+  SUM(Deposited_WBTC) over (order by dt asc) as Cum_Deposit_WBTC,
+  SUM(Borrowed_WBTC) over (order by dt asc) as Cum_Borrowed_WBTC,
+  SUM(Withdrawn_WBTC) over (order by dt asc) as Cum_Withdrawn_WBTC,
+  SUM(Repaid_WBTC) over (order by dt asc) as Cum_Repaid_WBTC,
+
+  SUM(Deposited_ATOM) over (order by dt asc) as Cum_Deposit_ATOM,
+  SUM(Borrowed_ATOM) over (order by dt asc) as Cum_Borrowed_ATOM,
+  SUM(Withdrawn_ATOM) over (order by dt asc) as Cum_Withdrawn_ATOM,
+  SUM(Repaid_ATOM) over (order by dt asc) as Cum_Repaid_ATOM,
+
+  SUM(Deposited_USDC) over (order by dt asc) as Cum_Deposit_USDC,
+  SUM(Borrowed_USDC) over (order by dt asc) as Cum_Borrowed_USDC,
+  SUM(Withdrawn_USDC) over (order by dt asc) as Cum_Withdrawn_USDC,
+  SUM(Repaid_USDC) over (order by dt asc) as Cum_Repaid_USDC,
+
+  SUM(Deposited_stATOM) over (order by dt asc) as Cum_Deposit_stATOM,
+  SUM(Borrowed_stATOM) over (order by dt asc) as Cum_Borrowed_stATOM,
+  SUM(Withdrawn_stATOM) over (order by dt asc) as Cum_Withdrawn_stATOM,
+  SUM(Repaid_stATOM) over (order by dt asc) as Cum_Repaid_stATOM
+from asset_flows
+group by 1
+order by 1 asc
+
+)
+ 
+
+select 
+a.*,
+coalesce((cum_deposit_OSMO-cum_withdrawn_OSMO)*OSMO_price,0) as OSMO_Deposit_TVL,
+case when a.dt >= '2023-04-25 02:00:00.000' then 136292 else 
+coalesce((cum_deposit_WETH-cum_withdrawn_WETH)*WETH_Price,0) end as WETH_Deposit_TVL,
+coalesce((cum_deposit_WBTC-cum_withdrawn_WBTC)*WBTC_price,0) as WBTC_Deposit_TVL,
+coalesce((cum_deposit_ATOM-cum_withdrawn_ATOM)*ATOM_price,0) as ATOM_Deposit_TVL,
+coalesce((cum_deposit_stATOM-cum_withdrawn_stATOM)*stATOM_price,0) as stATOM_Deposit_TVL,
+coalesce((cum_deposit_USDC-cum_withdrawn_USDC)*USDC_price,0) as USDC_Deposit_TVL,
+coalesce((cum_borrowed_OSMO-cum_repaid_OSMO)*OSMO_price,0) as OSMO_Borrowed_TVL,
+coalesce((cum_borrowed_ATOM-cum_repaid_ATOM)*ATOM_price,0) as ATOM_Borrowed_TVL,
+coalesce((cum_borrowed_USDC-cum_repaid_USDC)*USDC_price,0) as USDC_Borrowed_TVL,
+coalesce((cum_borrowed_WETH-cum_repaid_WETH)*WETH_Price,0) as WETH_Borrowed_TVL,
+coalesce((cum_borrowed_WBTC-cum_repaid_WBTC)*WBTC_price,0) as WBTC_Borrowed_TVL,
+coalesce((cum_borrowed_stATOM-cum_repaid_stATOM)*stATOM_price,0) as stATOM_Borrowed_TVL,
+OSMO_Deposit_TVL+ATOM_Deposit_TVL+USDC_Deposit_TVL+stATOM_Deposit_TVL+WETH_Deposit_TVL+WBTC_Deposit_TVL as Deposit_TVL,
+OSMO_Borrowed_TVL+ATOM_Borrowed_TVL+USDC_Borrowed_TVL+stATOM_Borrowed_TVL+WETH_Borrowed_TVL+WBTC_Borrowed_TVL as Borrow_TVL,
+Deposit_TVL - Borrow_TVL as Total_TVL,
+OSMO_Deposit_TVL-OSMO_Borrowed_TVL as OSMO_TVL,
+ATOM_Deposit_TVL-ATOM_Borrowed_TVL as ATOM_TVL,
+USDC_Deposit_TVL-USDC_Borrowed_TVL as USDC_TVL,
+stATOM_Deposit_TVL-stATOM_Borrowed_TVL as stATOM_TVL,
+WETH_Deposit_TVL-WETH_Borrowed_TVL as WETH_TVL,
+WBTC_Deposit_TVL-WBTC_Borrowed_TVL as WETH_TVL,
+case when OSMO_Deposit_TVL=0 then 0 else OSMO_Borrowed_TVL/OSMO_Deposit_TVL end as OSMO_Cap_Utilization,
+case when ATOM_Deposit_TVL=0 then 0 else ATOM_Borrowed_TVL/ATOM_Deposit_TVL end as ATOM_Cap_Utilization,
+case when USDC_Deposit_TVL=0 then 0 else USDC_Borrowed_TVL/USDC_Deposit_TVL end as USDC_Cap_Utilization,
+case when stATOM_Deposit_TVL=0 then 0 else stATOM_Borrowed_TVL/stATOM_Deposit_TVL end as stATOM_Cap_Utilization,
+Borrow_TVL/Deposit_TVL as Capital_Utilization,
+case when (((OSMO_Deposit_TVL*.61)+(ATOM_Deposit_TVL*.7)+(USDC_Deposit_TVL*.75)+(stATOM_Deposit_TVL*.55))/borrow_tvl) > 10 then 10
+else (((OSMO_Deposit_TVL*.61)+(ATOM_Deposit_TVL*.7)+(USDC_Deposit_TVL*.75)+(stATOM_Deposit_TVL*.55))/borrow_tvl) end as system_health_factor
+from summarized_flows a
+left join (
+select 
+recorded_hour as dt,
+price as OSMO_Price
+from osmosis.core.ez_prices
+where symbol = 'OSMO'
+) b
+on a.dt = b.dt
+left join (
+select 
+recorded_hour as dt,
+price as ATOM_Price
+from osmosis.core.ez_prices
+where symbol = 'ATOM'
+) c
+on a.dt = c.dt
+left join (
+select 
+recorded_hour as dt,
+price as USDC_Price
+from osmosis.core.ez_prices
+where symbol = 'USDC'
+) d
+on a.dt = d.dt
+left join (
+select 
+recorded_hour as dt,
+price as stATOM_Price
+from osmosis.core.ez_prices
+where symbol = 'STATOM'
+) e
+on a.dt = e.dt
+left join (
+select 
+recorded_hour as dt,
+price as WBTC_Price
+from osmosis.core.ez_prices
+where symbol = 'WBTC'
+) F
+on a.dt = f.dt
+left join (
+select 
+recorded_hour as dt,
+price as WETH_Price
+from osmosis.core.ez_prices
+where symbol = 'ETH'
+) G
+on a.dt = g.dt
+where a.dt <> '2023-03-26 02:00:00.000'
+order by dt asc
+
+ 
+    ''' 
+    st.code(code13, language="sql", line_numbers=False)            
+    
+    sql10 = """
+       with txs as (
+select
+distinct a.tx_id,
+a.msg_group,
+action
+from (
+select
+tx_id,
+msg_group,
+attribute_value as action
+from osmosis.core.fact_msg_attributes
+where attribute_key = 'action' and 
+(attribute_value = 'borrow' or attribute_value = 'deposit' or attribute_value = 'withdraw' or attribute_value = 'repay'
+)) a
+left join osmosis.core.fact_msg_attributes b
+on a.tx_id = b.tx_id
+where b.attribute_key = '_contract_address' and b.attribute_value = 'osmo1c3ljch9dfw5kf52nfwpxd2zmj2ese7agnx0p9tenkrryasrle5sqf3ftpg'
+),
+
+asset_flows as (
+
+select distinct *
+
+from (
+
+select
+date_trunc('hour',a.block_timestamp) as dt,
+a.tx_id,
+b.action,
+d.token as asset,
+a.amount/pow(10,d.decimal)/pow(10,6)/f.liquidity_index as amount,
+a.amount*e.price/pow(10,d.decimal)/pow(10,6)/f.liquidity_index as amount_usd
+from (
+select
+block_timestamp,
+tx_id,
+msg_group,
+attribute_value as amount
+from osmosis.core.fact_msg_attributes
+where msg_type = 'wasm' and attribute_key = 'amount_scaled'
+) a
+join txs b
+on a.tx_id = b.tx_id  -- and a.msg_group = b.msg_group
+join (
+select
+tx_id,
+msg_group,
+attribute_value as denom
+from osmosis.core.fact_msg_attributes
+where msg_type = 'wasm-interests_updated' and attribute_key = 'denom'
+) c
+on a.tx_id = c.tx_id -- and a.msg_group = c.msg_group
+join (
+select
+address,
+upper(project_name) as token,
+decimal
+from osmosis.core.dim_tokens
+) d 
+on c.denom = d.address
+join (
+select 
+recorded_hour,
+symbol,
+price
+from osmosis.core.ez_prices
+) e 
+on d.token = e.symbol and date_trunc('hour',a.block_timestamp) = e.recorded_hour
+join (
+select
+tx_id,
+msg_group,
+attribute_value as liquidity_index
+from osmosis.core.fact_msg_attributes
+where msg_type = 'wasm-interests_updated' and attribute_key = 'liquidity_index'
+) f
+on a.tx_id = f.tx_id  --and a.msg_group = f.msg_group
+where e.recorded_hour is not null
+)
+),
+
+summarized_flows as (
+
+select 
+  dt,
+  sum(coalesce(case when action = 'deposit' and asset = 'OSMO' then amount end,0)) as Deposited_OSMO,
+  sum(coalesce(case when action = 'deposit' and asset = 'ATOM' then amount end,0)) as Deposited_ATOM,
+  sum(coalesce(case when action = 'deposit' and asset = 'USDC' then amount end,0)) as Deposited_USDC,
+  sum(coalesce(case when action = 'deposit' and asset = 'STATOM' then amount end,0)) as Deposited_stATOM,
+  sum(coalesce(case when action = 'deposit' and asset = 'ETH' then amount end,0)) as Deposited_WETH,
+  sum(coalesce(case when action = 'deposit' and asset = 'WBTC' then amount end,0)) as Deposited_WBTC,
+  sum(coalesce(case when action = 'borrow' and asset = 'OSMO' then amount end,0)) as Borrowed_OSMO,
+  sum(coalesce(case when action = 'borrow' and asset = 'ATOM' then amount end,0)) as Borrowed_ATOM,
+  sum(coalesce(case when action = 'borrow' and asset = 'USDC' then amount end,0)) as Borrowed_USDC,
+  sum(coalesce(case when action = 'borrow' and asset = 'ETH' then amount end,0)) as Borrowed_WETH,
+  sum(coalesce(case when action = 'borrow' and asset = 'WBTC' then amount end,0)) as Borrowed_WBTC,
+  sum(coalesce(case when action = 'borrow' and asset = 'STATOM' then amount end,0)) as Borrowed_stATOM,
+  sum(coalesce(case when action = 'withdraw' and asset = 'OSMO' then amount end,0)) as Withdrawn_OSMO,
+  sum(coalesce(case when action = 'withdraw' and asset = 'ATOM' then amount end,0)) as Withdrawn_ATOM,
+  sum(coalesce(case when action = 'withdraw' and asset = 'STATOM' then amount end,0)) as Withdrawn_stATOM,
+  sum(coalesce(case when action = 'withdraw' and asset = 'USDC' then amount end,0)) as Withdrawn_USDC,
+  sum(coalesce(case when action = 'withdraw' and asset = 'ETH' then amount end,0)) as Withdrawn_WETH,
+  sum(coalesce(case when action = 'withdraw' and asset = 'WBTC' then amount end,0)) as Withdrawn_WBTC,
+  sum(coalesce(case when action = 'repay' and asset = 'OSMO' then amount end,0)) as Repaid_OSMO,
+  sum(coalesce(case when action = 'repay' and asset = 'ATOM' then amount end,0)) as Repaid_ATOM,
+  sum(coalesce(case when action = 'repay' and asset = 'USDC' then amount end,0)) as Repaid_USDC,
+  sum(coalesce(case when action = 'repay' and asset = 'STATOM' then amount end,0)) as Repaid_stATOM,
+  sum(coalesce(case when action = 'repay' and asset = 'ETH' then amount end,0)) as Repaid_WETH,
+  sum(coalesce(case when action = 'repay' and asset = 'WBTC' then amount end,0)) as Repaid_WBTC,
+  SUM(Deposited_OSMO) over (order by dt asc) as Cum_Deposit_OSMO,
+  SUM(Borrowed_OSMO) over (order by dt asc) as Cum_Borrowed_OSMO,
+  SUM(Repaid_OSMO) over (order by dt asc) as Cum_Repaid_OSMO,
+  SUM(Withdrawn_OSMO) over (order by dt asc) as Cum_Withdrawn_OSMO,
+
+  SUM(Deposited_WETH) over (order by dt asc) as Cum_Deposit_WETH,
+  SUM(Borrowed_WETH) over (order by dt asc) as Cum_Borrowed_WETH,
+  SUM(Withdrawn_WETH) over (order by dt asc) as Cum_Withdrawn_WETH,
+  SUM(Repaid_WETH) over (order by dt asc) as Cum_Repaid_WETH,
+
+  SUM(Deposited_WBTC) over (order by dt asc) as Cum_Deposit_WBTC,
+  SUM(Borrowed_WBTC) over (order by dt asc) as Cum_Borrowed_WBTC,
+  SUM(Withdrawn_WBTC) over (order by dt asc) as Cum_Withdrawn_WBTC,
+  SUM(Repaid_WBTC) over (order by dt asc) as Cum_Repaid_WBTC,
+
+  SUM(Deposited_ATOM) over (order by dt asc) as Cum_Deposit_ATOM,
+  SUM(Borrowed_ATOM) over (order by dt asc) as Cum_Borrowed_ATOM,
+  SUM(Withdrawn_ATOM) over (order by dt asc) as Cum_Withdrawn_ATOM,
+  SUM(Repaid_ATOM) over (order by dt asc) as Cum_Repaid_ATOM,
+
+  SUM(Deposited_USDC) over (order by dt asc) as Cum_Deposit_USDC,
+  SUM(Borrowed_USDC) over (order by dt asc) as Cum_Borrowed_USDC,
+  SUM(Withdrawn_USDC) over (order by dt asc) as Cum_Withdrawn_USDC,
+  SUM(Repaid_USDC) over (order by dt asc) as Cum_Repaid_USDC,
+
+  SUM(Deposited_stATOM) over (order by dt asc) as Cum_Deposit_stATOM,
+  SUM(Borrowed_stATOM) over (order by dt asc) as Cum_Borrowed_stATOM,
+  SUM(Withdrawn_stATOM) over (order by dt asc) as Cum_Withdrawn_stATOM,
+  SUM(Repaid_stATOM) over (order by dt asc) as Cum_Repaid_stATOM
+from asset_flows
+group by 1
+order by 1 asc
+
+)
+ 
+
+select 
+a.*,
+coalesce((cum_deposit_OSMO-cum_withdrawn_OSMO)*OSMO_price,0) as OSMO_Deposit_TVL,
+case when a.dt >= '2023-04-25 02:00:00.000' then 136292 else 
+coalesce((cum_deposit_WETH-cum_withdrawn_WETH)*WETH_Price,0) end as WETH_Deposit_TVL,
+coalesce((cum_deposit_WBTC-cum_withdrawn_WBTC)*WBTC_price,0) as WBTC_Deposit_TVL,
+coalesce((cum_deposit_ATOM-cum_withdrawn_ATOM)*ATOM_price,0) as ATOM_Deposit_TVL,
+coalesce((cum_deposit_stATOM-cum_withdrawn_stATOM)*stATOM_price,0) as stATOM_Deposit_TVL,
+coalesce((cum_deposit_USDC-cum_withdrawn_USDC)*USDC_price,0) as USDC_Deposit_TVL,
+coalesce((cum_borrowed_OSMO-cum_repaid_OSMO)*OSMO_price,0) as OSMO_Borrowed_TVL,
+coalesce((cum_borrowed_ATOM-cum_repaid_ATOM)*ATOM_price,0) as ATOM_Borrowed_TVL,
+coalesce((cum_borrowed_USDC-cum_repaid_USDC)*USDC_price,0) as USDC_Borrowed_TVL,
+coalesce((cum_borrowed_WETH-cum_repaid_WETH)*WETH_Price,0) as WETH_Borrowed_TVL,
+coalesce((cum_borrowed_WBTC-cum_repaid_WBTC)*WBTC_price,0) as WBTC_Borrowed_TVL,
+coalesce((cum_borrowed_stATOM-cum_repaid_stATOM)*stATOM_price,0) as stATOM_Borrowed_TVL,
+OSMO_Deposit_TVL+ATOM_Deposit_TVL+USDC_Deposit_TVL+stATOM_Deposit_TVL+WETH_Deposit_TVL+WBTC_Deposit_TVL as Deposit_TVL,
+OSMO_Borrowed_TVL+ATOM_Borrowed_TVL+USDC_Borrowed_TVL+stATOM_Borrowed_TVL+WETH_Borrowed_TVL+WBTC_Borrowed_TVL as Borrow_TVL,
+Deposit_TVL - Borrow_TVL as Total_TVL,
+OSMO_Deposit_TVL-OSMO_Borrowed_TVL as OSMO_TVL,
+ATOM_Deposit_TVL-ATOM_Borrowed_TVL as ATOM_TVL,
+USDC_Deposit_TVL-USDC_Borrowed_TVL as USDC_TVL,
+stATOM_Deposit_TVL-stATOM_Borrowed_TVL as stATOM_TVL,
+WETH_Deposit_TVL-WETH_Borrowed_TVL as WETH_TVL,
+WBTC_Deposit_TVL-WBTC_Borrowed_TVL as WETH_TVL,
+case when OSMO_Deposit_TVL=0 then 0 else OSMO_Borrowed_TVL/OSMO_Deposit_TVL end as OSMO_Cap_Utilization,
+case when ATOM_Deposit_TVL=0 then 0 else ATOM_Borrowed_TVL/ATOM_Deposit_TVL end as ATOM_Cap_Utilization,
+case when USDC_Deposit_TVL=0 then 0 else USDC_Borrowed_TVL/USDC_Deposit_TVL end as USDC_Cap_Utilization,
+case when stATOM_Deposit_TVL=0 then 0 else stATOM_Borrowed_TVL/stATOM_Deposit_TVL end as stATOM_Cap_Utilization,
+Borrow_TVL/Deposit_TVL as Capital_Utilization,
+case when (((OSMO_Deposit_TVL*.61)+(ATOM_Deposit_TVL*.7)+(USDC_Deposit_TVL*.75)+(stATOM_Deposit_TVL*.55))/borrow_tvl) > 10 then 10
+else (((OSMO_Deposit_TVL*.61)+(ATOM_Deposit_TVL*.7)+(USDC_Deposit_TVL*.75)+(stATOM_Deposit_TVL*.55))/borrow_tvl) end as system_health_factor
+from summarized_flows a
+left join (
+select 
+recorded_hour as dt,
+price as OSMO_Price
+from osmosis.core.ez_prices
+where symbol = 'OSMO'
+) b
+on a.dt = b.dt
+left join (
+select 
+recorded_hour as dt,
+price as ATOM_Price
+from osmosis.core.ez_prices
+where symbol = 'ATOM'
+) c
+on a.dt = c.dt
+left join (
+select 
+recorded_hour as dt,
+price as USDC_Price
+from osmosis.core.ez_prices
+where symbol = 'USDC'
+) d
+on a.dt = d.dt
+left join (
+select 
+recorded_hour as dt,
+price as stATOM_Price
+from osmosis.core.ez_prices
+where symbol = 'STATOM'
+) e
+on a.dt = e.dt
+left join (
+select 
+recorded_hour as dt,
+price as WBTC_Price
+from osmosis.core.ez_prices
+where symbol = 'WBTC'
+) F
+on a.dt = f.dt
+left join (
+select 
+recorded_hour as dt,
+price as WETH_Price
+from osmosis.core.ez_prices
+where symbol = 'ETH'
+) G
+on a.dt = g.dt
+where a.dt <> '2023-03-26 02:00:00.000'
+order by dt asc
+
+   
+    """
+    
+    st.experimental_memo(ttl=1000000)
+    @st.experimental_memo
+    def compute(a):
+        results=sdk.query(a)
+        return results
+    
+    results10 = compute(sql10)
+    df10 = pd.DataFrame(results10.records)
+    
+    fig1 = px.area(df10, x="DT", y="DEPOSIT_TVL", color_discrete_sequence=px.colors.qualitative.Pastel2)
+    fig1.update_layout(
+    title='Daily Mars deposit TVL (USD)',
+    xaxis_tickfont_size=14,
+    yaxis_tickfont_size=14,
+    bargap=0.15, # gap between bars of adjacent location coordinates.
+    bargroupgap=0.1 # gap between bars of the same location coordinate.
+    )
+    st.plotly_chart(fig1, theme="streamlit", use_container_width=True)
+
+    fig1 = px.area(df10, x="DT", y="BORROW_TVL", color_discrete_sequence=px.colors.qualitative.Pastel2)
+    fig1.update_layout(
+    title='Daily Mars borrow TVL (USD)',
+    xaxis_tickfont_size=14,
+    yaxis_tickfont_size=14
+    )
+    st.plotly_chart(fig1, theme="streamlit", use_container_width=True)
+ 
