@@ -18,11 +18,12 @@ import plotly.express as px
 # Configure Streamlit Page
 #page_icon = "assets/img/eth.jpg"
 page_icon = "assets/img/osmosis-55faa201.png"
-st.set_page_config(page_title="Query ETH", page_icon=page_icon, layout="wide")
+st.set_page_config(page_title="Query Osmosis", page_icon=page_icon, layout="wide")
 st.header("Query Osmosis")
 st.warning(
-    "Quickly explore Osmosis blockchain data w/ different providers. For extensive usage, register directly with Flipside."
+    "Quickly explore Osmosis blockchain data. For extensive usage, register directly with Flipside."
 )
+st.write('In order to register with Flipside, there is an amazing guide made by Chordtus [here](https://hackmd.io/@ILT-2i1MSgCJAtK6mNy40Q/SyLjS7UW3)') 
 
 # Read Custom CSS
 with open("assets/css/style.css", "r") as f:
@@ -72,7 +73,7 @@ schema_df = pd.read_csv("assets/provider_schema_data.csv")
 
 # Sidebar
 st.sidebar.image("assets/img/osmosis-55faa201.png", width=300)
-provider = st.sidebar.selectbox("Providers", ["Osmosis"])
+provider = st.sidebar.selectbox("Schema", ["Osmosis core tables"])
 st.sidebar.write("Tables")
 
 # Render the Query Editor
@@ -99,7 +100,7 @@ for index, row in provider_tables_df.iterrows():
         ]
         st.table(columns_df)
 
-provider = st.sidebar.selectbox("Providers", ["Mars"])
+provider = st.sidebar.selectbox("Schema", ["Mars tables on Osmosis"])
 st.sidebar.write("Tables")
 
 # Render the Query Editor
