@@ -21,9 +21,24 @@ page_icon = "assets/img/osmosis-55faa201.png"
 st.set_page_config(page_title="Query Osmosis", page_icon=page_icon, layout="wide")
 st.header("Query Osmosis")
 st.warning(
-    "Quickly explore Osmosis blockchain data. For extensive usage, register directly with Flipside."
+    "Quickly explore Osmosis blockchain data. For extensive usage, register directly with Flipside, using an amazing guide made by Chordtus [here](https://hackmd.io/@ILT-2i1MSgCJAtK6mNy40Q/SyLjS7UW3)."
 )
-st.write('In order to register with Flipside, there is an amazing guide made by Chordtus [here](https://hackmd.io/@ILT-2i1MSgCJAtK6mNy40Q/SyLjS7UW3)') 
+st.warning(
+    "The following tool will be on the top side at all times for users to interact better with the queries."
+)
+
+ace_query = st_ace(
+        language="sql",
+        placeholder="select * from osmosis.core.fact_transfers limit 10",
+        theme="twilight",
+)  
+
+try:
+    if ace_query:
+        results_df = run_query(ace_query, provider)
+        st.write(results_df)
+except:
+    st.write("Write a new query.")
 
 # Read Custom CSS
 with open("assets/css/style.css", "r") as f:
@@ -155,12 +170,6 @@ with tab1:
         theme="twilight",
     )  
     
-    try:
-        if ace_query:
-            results_df = run_query(ace_query, provider)
-            st.write(results_df)
-    except:
-        st.write("Write a new query.")
 
 with tab2:
     
@@ -311,12 +320,6 @@ with tab3:
         theme="twilight",
     )  
     
-    try:
-        if ace_query:
-            results_df = run_query(ace_query, provider)
-            st.write(results_df)
-    except:
-        st.write("Write a new query.")
         
     st.write('So it returns three values: IBC_TRANSFER_OUT, IBC_TRANSFER_IN and OSMOSIS. Therefore, the two first values correspond to tokens being sent out and received to and from other IBC-enabled blockchains. Consider the following code:')
 
@@ -610,12 +613,6 @@ limit 20
         theme="twilight",
     )  
     
-    try:
-        if ace_query:
-            results_df = run_query(ace_query, provider)
-            st.write(results_df)
-    except:
-        st.write("Write a new query.")
         
 
   
