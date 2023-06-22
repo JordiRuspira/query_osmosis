@@ -21,7 +21,7 @@ page_icon = "assets/img/osmosis-55faa201.png"
 st.set_page_config(page_title="Query Osmosis", page_icon=page_icon, layout="wide")
 st.header("Query Osmosis")
 st.warning(
-    "Quickly explore Osmosis blockchain data. For extensive usage, register directly with Flipside, using an amazing guide made by Chordtus [here](https://hackmd.io/@ILT-2i1MSgCJAtK6mNy40Q/SyLjS7UW3)."
+    "Quickly explore Osmosis blockchain data. For extensive usage, register directly with Flipside, using an amazing guide made by Cordtus [here](https://hackmd.io/@ILT-2i1MSgCJAtK6mNy40Q/SyLjS7UW3)."
 )
 st.warning(
     "The following tool will be on the top side at all times for users to interact better with the queries."
@@ -66,7 +66,7 @@ def run_query(q, provider):
     
 ace_query = st_ace(
     language="sql",
-    placeholder="elect * from osmosis.core.fact_transfers limit 10",
+    placeholder="select * from osmosis.core.fact_transfers limit 10",
     theme="twilight",
 )
 
@@ -1086,7 +1086,7 @@ order by dt asc
 
     st.write('Using the query above, one can plot the charts below:')
     
-    fig1 = px.area(df10, x="DT", y="DEPOSIT_TVL", color_discrete_sequence=px.colors.qualitative.Pastel2)
+    fig1 = px.area(df10, x="dt", y="Deposit_TVL", color_discrete_sequence=px.colors.qualitative.Pastel2)
     fig1.update_layout(
     title='Daily Mars deposit TVL (USD)',
     xaxis_tickfont_size=14,
@@ -1096,7 +1096,7 @@ order by dt asc
     )
     st.plotly_chart(fig1, theme="streamlit", use_container_width=True)
 
-    fig1 = px.area(df10, x="DT", y="BORROW_TVL", color_discrete_sequence=px.colors.qualitative.Pastel2)
+    fig1 = px.area(df10, x="dt", y="Borrow_TVL", color_discrete_sequence=px.colors.qualitative.Pastel2)
     fig1.update_layout(
     title='Daily Mars borrow TVL (USD)',
     xaxis_tickfont_size=14,
