@@ -227,20 +227,7 @@ with tab2:
     from raw_data''' 
 
     st.code(code11, language="sql", line_numbers=False)   
-    
-    ace_query2 = st_ace(
-        language="sql",
-        placeholder="select distinct transfer_type from osmosis.core.fact_transfers",
-        theme="twilight",
-    )  
-    
-    try:
-        if ace_query2:
-            results_df2 = run_query(ace_query2, provider)
-            st.write(results_df2)
-    except:
-        st.write("Write a new query.")
-        
+     
         
     st.write('With the most basic things covered, time to move up to Osmosis data!')
 
