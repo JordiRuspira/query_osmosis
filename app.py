@@ -271,3 +271,264 @@ with tab3:
     )
     st.plotly_chart(fig1, theme="streamlit", use_container_width=True)
  
+      
+    st.subheader("Daily amount delegated/undelegated/redelegated")
+    st.write('')
+    st.write('Same structure as before, we can calculate daily amount of OSMO delegated, undelegated and redelegated.')
+    
+
+
+    code7 = '''select date_trunc('day', block_timestamp) as date,
+    action,
+    sum(amount/pow(10, decimal)) as total_amount from osmosis.core.fact_staking a 
+    where tx_succeeded = 'TRUE'
+    and  date_trunc('day', block_timestamp) >= current_date - 30
+    and currency = 'uosmo'
+    group by date, action
+    ''' 
+
+    st.code(code7, language="sql", line_numbers=False)            
+    
+    st.write('If we execute and plot the results of the previous statement, we can plot the daily number of IBC transactions in and out of Osmosis from the past 30 days.')
+   
+    
+    sql1 = """
+       select date_trunc('day', block_timestamp) as date,
+    action,
+    sum(amount/pow(10, decimal)) as total_amount from osmosis.core.fact_staking a 
+    where tx_succeeded = 'TRUE'
+    and  date_trunc('day', block_timestamp) >= current_date - 30
+    and currency = 'uosmo'
+    group by date, action   
+    """
+    
+    st.experimental_memo(ttl=1000000)
+    @st.experimental_memo
+    def compute(a):
+        results=sdk.query(a)
+        return results
+    
+    results1 = compute(sql1)
+    df1 = pd.DataFrame(results1.records)
+    
+    fig1 = px.bar(df1, x="date", y="total_amount", color="action", color_discrete_sequence=px.colors.qualitative.Pastel2)
+    fig1.update_layout(
+    title='Daily OSMO delegated, undelegated and redelegated - last 30 days',
+    xaxis_tickfont_size=14,
+    yaxis_tickfont_size=14,
+    bargap=0.15, # gap between bars of adjacent location coordinates.
+    bargroupgap=0.1 # gap between bars of the same location coordinate.
+    )
+    st.plotly_chart(fig1, theme="streamlit", use_container_width=True)
+ 
+    
+with tab4:    
+    
+    
+    st.subheader("Creation of more complex tables")
+    st.write('')
+    st.write('So far we have only used examples of queries using only a single table. In SQL however there is a very usefull tool known as CTE (Common Table Expression), which allows users to create a temporary table using a query (then known as subquery), store it in a temporary table and use that one later for further purposes. For instance, imagine a very basic example:')
+    
+    code8 = '''with table_example as (
+    select '20230101' as day, 'January' as month, 'this is a example column' as column1 from dual
+    )
+    select * from table_example 
+    ''' 
+
+    st.code(code8, language="sql", line_numbers=False)            
+    
+    ace_query = st_ace(
+        language="sql",
+        placeholder="select * from osmosis.core.fact_transfers limit 10",
+        theme="twilight",
+    )  
+    
+    try:
+        if ace_query:
+            results_df = run_query(ace_query, provider)
+            st.write(results_df)
+    except:
+        st.write("Write a new query.")
+        
+    st.write('If you copy and execute the code, this shows two useful things:')
+    st.write('- We have introduced the concept of dual. The dual table allows you to create a completely invented table and use it later on.')
+    st.write('- We have named that table as "table_example", and then selected everything from that table. You may now start seeing why this is useful.')
+    st.write('With this concepts introduced, we can now go finally one step further, and create a complex query which gives you the amount staked per address.')
+    
+    
+    code9 = '''WITH time as (
+    select
+      max(date_trunc('day', block_timestamp)) as date
+    from
+      osmosis.core.fact_blocks 
+  ),
+  delegations as (
+    select
+      date_trunc('day', block_timestamp) as date,
+      delegator_address,
+      validator_address,
+      sum(amount / pow(10, decimal)) as amount
+    from
+      osmosis.core.fact_staking
+    where
+      tx_succeeded = 'TRUE'
+      and action = 'delegate'
+      and date_trunc('day', block_timestamp) <= (
+        select
+          date
+        from
+          time
+      )
+    group by
+      date,
+      delegator_address,
+      validator_address
+  ),
+  undelegations as (
+    select
+      date_trunc('day', block_timestamp) as date,
+      delegator_address,
+      validator_address,
+      sum(amount / pow(10, decimal)) * (-1) as amount
+    from
+      osmosis.core.fact_staking
+    where
+      tx_succeeded = 'TRUE'
+      and action = 'undelegate'
+      and date_trunc('day', block_timestamp) <= (
+        select
+          date
+        from
+          time
+      )
+    group by
+      date,
+      delegator_address,
+      validator_address
+  ),
+  redelegations_to as (
+    select
+      date_trunc('day', block_timestamp) as date,
+      delegator_address,
+      validator_address,
+      sum(amount / pow(10, decimal)) as amount
+    from
+      osmosis.core.fact_staking
+    where
+      tx_succeeded = 'TRUE'
+      and action = 'redelegate'
+      and date_trunc('day', block_timestamp) <= (
+        select
+          date
+        from
+          time
+      )
+    group by
+      date,
+      delegator_address,
+      validator_address
+  ),
+  redelegations_from as (
+    select
+      date_trunc('day', block_timestamp) as date,
+      delegator_address,
+      redelegate_source_validator_address as validator_address,
+      sum(amount / pow(10, decimal)) * (-1) as amount
+    from
+      osmosis.core.fact_staking
+    where
+      tx_succeeded = 'TRUE'
+      and action = 'redelegate'
+      and date_trunc('day', block_timestamp) <= (
+        select
+          date
+        from
+          time
+      )
+    group by
+      date,
+      delegator_address,
+      redelegate_source_validator_address
+  ),
+  total_staked_user_1 as (
+    select
+      delegator_address,
+      b.total_amount,
+      sum(amount) as amount_delegated_user,
+      amount_delegated_user / b.total_amount * 100 as percentage_over_total,
+      rank() over (
+        order by
+          percentage_over_total desc
+      ) as rank
+    from
+      (
+        select
+          *
+        from
+          delegations
+        union all
+        select
+          *
+        from
+          undelegations
+        union all
+        select
+          *
+        from
+          redelegations_to
+        union all
+        select
+          *
+        from
+          redelegations_from
+      ) a
+      join (
+        select
+          sum(amount) as total_amount
+        from
+          (
+            select
+              *
+            from
+              delegations
+            union all
+            select
+              *
+            from
+              undelegations
+            union all
+            select
+              *
+            from
+              redelegations_to
+            union all
+            select
+              *
+            from
+              redelegations_from
+          )
+      ) b
+    group by
+      1,
+      2
+    order by
+      percentage_over_total desc
+  )
+select * from total_staked_user_1
+limit 20
+    ''' 
+    
+    st.write('So yeah that is a large query. It takes the last available date, delegations, undelegations, redelegations from and redelegations to other validators, and finally calculates the percentage each user has over the total amount staked, and assigns a rank based on that order. I have set a limit to only show the first 20 rows, but feel free to erase that in order to have a full list. Even more, if you select a specific date in the first CTE, it will show the amount staked by each user on that specific date.')
+    
+    ace_query = st_ace(
+        language="sql",
+        placeholder="select * from osmosis.core.fact_transfers limit 10",
+        theme="twilight",
+    )  
+    
+    try:
+        if ace_query:
+            results_df = run_query(ace_query, provider)
+            st.write(results_df)
+    except:
+        st.write("Write a new query.")
