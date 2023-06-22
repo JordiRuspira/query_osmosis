@@ -33,12 +33,9 @@ ace_query = st_ace(
         theme="twilight",
 )  
 
-try:
-    if ace_query:
-        results_df = run_query(ace_query, provider)
-        st.write(results_df)
-except:
-    st.write("Write a new query.")
+
+results_df = run_query(ace_query, provider)
+st.write(results_df)
 
 # Read Custom CSS
 with open("assets/css/style.css", "r") as f:
