@@ -100,7 +100,7 @@ for index, row in provider_tables_df.iterrows():
         st.table(columns_df)
 
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["Introduction and basics", "SQL basics", "Osmosis basics", "Osmosis - create a few complex tables", "JSON basics"])
+tab1, tab2, tab3, tab4  = st.tabs(["Introduction and basics", "SQL and JSON basics", "Osmosis basics", "Osmosis - create a few complex tables"])
 
 with tab1:
     
@@ -180,6 +180,68 @@ with tab2:
 
     st.code(code4, language="sql", line_numbers=False)            
     
+    
+    st.subheader("JSON basics")
+    
+    st.write('As stated by Antonidas, any field that comes from JSON should be casted or there will be problems with types. Never Trust JSON Fields, always use the TRY_* functions.')
+    st.write('')
+    st.write('I will not go into detail, since this pretends to serve as an introduction, but here are a couple of examples:')
+    
+    code11 = '''with
+      raw_data as (
+        select
+          '{
+    "field1":"text",
+    "field2":100,
+    "field3":1.05,
+    "field4":"0x020",
+    }' as json_raw_string
+      ),
+      parsed_data as (
+        select
+          try_parse_json(json_raw_string)::variant as my_json_object
+        from
+          raw_data
+      )
+    select
+      my_json_object:field1::text as field1, 
+      try_to_numeric(my_json_object:field2::text)::integer as field2,
+      TRY_TO_DOUBLE(my_json_object:field3::text)::double as field3,
+      ethereum.public.udf_hex_to_int (my_json_object:field4)::integer as field4
+    from
+      parsed_data''' 
+
+    st.code(code11, language="sql", line_numbers=False)  
+    
+    st.write('And an example using real data:')
+    
+    code11 = '''with raw_data as (
+    select livequery.live.udf_api('https://ipfs.io/ipfs/Qmc8F75h1fRJbZTWrP6vjaTeCQe9XWxZrxJfbRqqvfNihE')
+    as ipfs_data
+    )
+    
+    select 
+    ipfs_data:data:description::string  as data_description,
+    ipfs_data:data:image::string  as data_image,
+    ipfs_data
+    from raw_data''' 
+
+    st.code(code11, language="sql", line_numbers=False)   
+    
+    ace_query = st_ace(
+        language="sql",
+        placeholder="select distinct transfer_type from osmosis.core.fact_transfers",
+        theme="twilight",
+    )  
+    
+    try:
+        if ace_query:
+            results_df = run_query(ace_query, provider)
+            st.write(results_df)
+    except:
+        st.write("Write a new query.")
+        
+        
     st.write('With the most basic things covered, time to move up to Osmosis data!')
 
 with tab3:    
@@ -521,3 +583,6 @@ limit 20
             st.write(results_df)
     except:
         st.write("Write a new query.")
+        
+
+  
