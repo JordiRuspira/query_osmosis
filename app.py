@@ -25,7 +25,7 @@ custom_css = f"<style>{css_text}</style>"
 st.markdown(custom_css, unsafe_allow_html=True)
 
 # Get API Keys
-flipside_key = os.environ["FLIPSIDE_KEY"]
+flipside_key = st.secrets["API_KEY"]
 
 # Query Flipside using their Python SDK
 def query_flipside(q):
