@@ -27,21 +27,6 @@ st.warning(
     "The following tool will be on the top side at all times for users to interact better with the queries."
 )
 
-ace_query = st_ace(
-        language="sql",
-        placeholder="select * from osmosis.core.fact_transfers limit 10",
-        theme="twilight",
-)  
-
-
-results_df = run_query(ace_query, provider)
-st.write(results_df)
-
-# Read Custom CSS
-with open("assets/css/style.css", "r") as f:
-    css_text = f.read()
-custom_css = f"<style>{css_text}</style>"
-st.markdown(custom_css, unsafe_allow_html=True)
 
 # Get API Keys
 flipside_key = st.secrets["API_KEY"]
@@ -78,6 +63,27 @@ def run_query(q, provider):
     }
     df = provider_query[provider](q)
     return df
+    
+ace_query = st_ace(
+    language="sql",
+    placeholder="elect * from osmosis.core.fact_transfers limit 10",
+    theme="twilight",
+)
+
+provider_0 = 'Flipside'
+try:
+    if ace_query:
+        results_df = run_query(ace_query, provider_0)
+        st.write(results_df)
+except:
+    st.write("Write a new query.")
+
+# Read Custom CSS
+with open("assets/css/style.css", "r") as f:
+    css_text = f.read()
+custom_css = f"<style>{css_text}</style>"
+st.markdown(custom_css, unsafe_allow_html=True)
+
 
 
 # Fetch data
@@ -112,18 +118,18 @@ for index, row in provider_tables_df.iterrows():
         ]
         st.table(columns_df)
 
-provider = st.sidebar.selectbox("Schema", ["Mars tables on Osmosis"])
+provider_2 = st.sidebar.selectbox("Schema", ["Mars tables on Osmosis"])
 st.sidebar.write("Tables")
 
 # Render the Query Editor
-provider_schema_df = schema_df[schema_df["table_schema"] == 'mars']
-provider_tables_df = (
-    provider_schema_df.drop(columns=["column_name"])
+provider_schema_df_2 = schema_df[schema_df["table_schema"] == 'mars']
+provider_tables_df_2 = (
+    provider_schema_df_2.drop(columns=["column_name"])
     .drop_duplicates()
     .sort_values(by=["table_name"])
 )
 
-for index, row in provider_tables_df.iterrows():
+for index, row in provider_tables_df_2.iterrows():
     table_name = row["table_name"]
     table_schema = row["table_schema"]
     table_catalog = row["table_catalog"]
@@ -134,7 +140,7 @@ for index, row in provider_tables_df.iterrows():
 
     with st.sidebar.expander(table_name):
         st.code(f"{table_catalog}{table_schema}.{table_name}", language="sql")
-        columns_df = provider_schema_df[provider_schema_df["table_name"] == table_name][
+        columns_df = provider_schema_df_2[provider_schema_df_2["table_name"] == table_name][
             ["column_name"]
         ]
         st.table(columns_df)
