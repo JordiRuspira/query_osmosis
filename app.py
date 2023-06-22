@@ -25,9 +25,6 @@ st.markdown(custom_css, unsafe_allow_html=True)
 
 # Get API Keys
 flipside_key = os.environ["FLIPSIDE_KEY"]
-transpose_key = os.environ["TRANSPOSE_KEY"]
-chainbase_key = os.environ["CHAINBASE_KEY"]
-
 
 # Query Flipside using their Python SDK
 def query_flipside(q):
@@ -52,56 +49,11 @@ def query_flipside(q):
     return result_df
 
 
-# Query Transpose using their API
-def query_transpose(q):
-    url = "https://api.transpose.io/sql"
-    headers = {
-        "Content-Type": "application/json",
-        "X-API-KEY": transpose_key,
-    }
-    response = requests.post(
-        url,
-        headers=headers,
-        json={
-            "sql": q,
-        },
-    )
-    results_json = json.loads(response.text)["results"]
-    results_df = pd.DataFrame.from_dict(results_json)
-    return results_df
-
-
-# Query Chainbase using their REST API
-def query_chainbase(q):
-    url = "https://api.chainbase.online/v1/dw/query"
-    payload = {"query": q}
-    headers = {"x-api-key": chainbase_key}
-    response = requests.post(url, json=payload, headers=headers)
-    task_id = response.json()["data"]["task_id"]
-    row_ct = response.json()["data"]["rows"]
-    all_results_df = pd.DataFrame([])
-    row_ct = math.ceil(response.json()["data"]["rows"] / 1000)
-    if row_ct == 1:
-        data = response.json()["data"]["result"]
-        all_results_df = pd.json_normalize(data)
-    else:
-        time.sleep(2)
-        for i in range(0, row_ct, 1):
-            payload = {"task_id": task_id, "page": i + 1}
-            response = requests.post(url, json=payload, headers=headers)
-            data = response.json()["data"]["result"]
-            results_df = pd.json_normalize(data)
-            all_results_df = pd.concat([all_results_df, results_df])
-            time.sleep(2)
-    return all_results_df
-
 
 # Provider names mapped to their respective query functions
 def run_query(q, provider):
     provider_query = {
-        "Flipside": query_flipside,
-        "Transpose": query_transpose,
-        "Chainbase": query_chainbase,
+        "Flipside": query_flipside
     }
     df = provider_query[provider](q)
     return df
@@ -112,7 +64,7 @@ schema_df = pd.read_csv("assets/provider_schema_data.csv")
 
 # Sidebar
 st.sidebar.image("assets/img/ethereum.jpg", width=300)
-provider = st.sidebar.selectbox("Providers", ["Flipside", "Transpose", "Chainbase"])
+provider = st.sidebar.selectbox("Providers", ["Flipside"])
 st.sidebar.write("Tables")
 
 # Render the Query Editor
@@ -143,7 +95,7 @@ for index, row in provider_tables_df.iterrows():
 # Query Editor
 ace_query = st_ace(
     language="sql",
-    placeholder="SELECT * FROM ethereum.blocks limit 10",
+    placeholder="SELECT * FROM osmosis.blocks limit 10",
     theme="twilight",
 )
 
