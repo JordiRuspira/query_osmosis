@@ -241,8 +241,14 @@ with tab3:
    
     
     sql0 = """
-    select address, account_address, label, rank from  osmosis.core.fact_validators
-    where rank <= 150
+       select date_trunc('day', block_timestamp) as date,
+    transfer_type,
+    count(distinct tx_id) as num_tx from osmosis.core.fact_transfers a 
+    where tx_succeeded = 'TRUE'
+    and  date_trunc('day', block_timestamp) >= current_date - 30
+    and transfer_type in ('IBC_TRANSFER_IN','IBC_TRANSFER_OUT')
+    group by date, transfer_type
+
     
     """
     
