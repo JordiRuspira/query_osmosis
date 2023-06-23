@@ -75,7 +75,7 @@ try:
 except:
     st.write("Write a new query.")
     
-st.warning("Please, when using the tool and querying, use simple queries and limit 10 to limit the querying time, since it is limited!")
+st.warning("Please, when using the tool and querying, use simple queries and limit 10 to reduce the querying time, since it is limited!")
         
 
 # Read Custom CSS
