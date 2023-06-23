@@ -162,7 +162,7 @@ with tab1:
     st.write('')
     st.write('With this being said, I have to thank both Primo Data and Antonidas, because many of this work is already done by them, I`ve taken different pieces, structured it and tried to make it user friendly and specific for Osmosis users.')
     st.write('This would not be fair at all without giving credit to them:')
-    st.write('- Inspiration and maaany thinks forked from [here](https://queryeth.streamlit.app/) by [Primo Data](https://twitter.com/primo_data)')
+    st.write('- Inspiration and maaany things forked from [here](https://queryeth.streamlit.app/) by [Primo Data](https://twitter.com/primo_data)')
     st.write('- SQL basics and JSON taken from [here](https://flipsidecrypto.xyz/Antonidas/the-flipside-helpdesk-7xL0-n) by [Anton](https://twitter.com/msgAnton)')
     st.write('')
     st.write('This tool is created so that users who want to learn the first basics don`t have to go through the process of creating an user on flipside, which will be better for them once they want to explore everything with more detail. Using tools like the one below, I expect this to be more friendly to a user who has never or barely ever touched SQL, and has no clue about what flipside is and how it works.')
