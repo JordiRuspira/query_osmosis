@@ -169,7 +169,7 @@ with tab1:
     st.warning(
     "Please, when using the tool and querying, use simple queries and limit 10 to limit the querying time, since it is limited!")
     
-    
+     
 
 with tab2:
     
