@@ -144,7 +144,7 @@ for index, row in provider_tables_df_2.iterrows():
         st.table(columns_df)
 
 
-tab1, tab2, tab3, tab4  = st.tabs(["Introduction and basics", "SQL and JSON basics", "Osmosis basics", "Osmosis - create a few complex tables"])
+tab1, tab2, tab3, tab4, tab5  = st.tabs(["Introduction and basics", "SQL and JSON basics", "Osmosis basics", "Osmosis - create a few complex tables", "Flipside docs"])
 
 with tab1:
     
@@ -164,7 +164,8 @@ with tab1:
     st.write('- SQL basics and JSON taken from [here](https://flipsidecrypto.xyz/Antonidas/the-flipside-helpdesk-7xL0-n) by [Anton](https://twitter.com/msgAnton)')
     st.write('')
     st.write('This tool is created so that users who want to learn the first basics don`t have to go through the process of creating an user on flipside, which will be better for them once they want to explore everything with more detail. Using tools like the one below, I expect this to be more friendly to a user who has never or barely ever touched SQL, and has no clue about what flipside is and how it works.')
-    
+    st.warning(
+    "Please, when using the tool and querying, use simple queries and limit 10 to limit the querying time, since it is limited!")
     
     
 
@@ -1009,3 +1010,12 @@ order by dt asc
     )
     st.plotly_chart(fig1, theme="streamlit", use_container_width=True)
  
+with tab5:
+     
+    st.subheader("Flipside links and docs")
+    st.write('')
+    st.write('Appart from Osmosis, Flipside has data from many other blockchains, including Ethereum, Optimism, Avalanche and many more. There is also more documentation and information regarding the columns on each table, which can be shown in the links below:')
+    st.write('- [Flipside docs](https://docs.flipsidecrypto.com/), with a detailed introduction and information on how Flipside works')
+    st.write('- [Database info](https://flipsidecrypto.github.io/osmosis-models/#!/overview/osmosis_models), with even more detail on each table for Osmosis.')
+    st.write('- [Twitter account](https://twitter.com/flipsidecrypto), to keep up to date with the latest news')
+    
