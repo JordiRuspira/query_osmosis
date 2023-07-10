@@ -22,7 +22,7 @@ st.set_page_config(page_title="Query Osmosis", page_icon=page_icon, layout="wide
 st.header("Query Osmosis using FlipsideCrypto")
 st.subheader('Dashboard by [Jordi R](https://twitter.com/RuspiTorpi/). Powered by Flipsidecrypto')
 st.warning(
-    "Quickly explore Osmosis blockchain data. For extensive usage, register directly with Flipside, using an amazing guide made by Cordtus [here](https://hackmd.io/@ILT-2i1MSgCJAtK6mNy40Q/SyLjS7UW3). The following tool will be on the top side at all times for users to interact better with the queries."
+    "Quickly explore Osmosis blockchain data. For extensive usage, register directly with Flipside, using an amazing guide made by Cordtus [here](https://github.com/osmo-support-lab/guides-and-info/blob/main/readme/interacting-with-osmosis/query-flipside-database.md). The following tool will be on the top side at all times for users to interact better with the queries."
 )
 
 # Get API Keys
